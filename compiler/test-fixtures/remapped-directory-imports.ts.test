@@ -1,0 +1,6 @@
+import { v4 } from 'https://deno.land/std@0.151.0/uuid/mod.ts'
+import { A } from './foo/a.ts'
+
+export function newA(): A {
+  return new A(v4.generate())
+}

@@ -1,0 +1,6 @@
+import { v4 } from 'std/uuid/mod.ts'
+import { A } from './a.ts'
+
+export function newA(): A {
+  return new A(v4.generate())
+}

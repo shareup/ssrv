@@ -1,0 +1,26 @@
+{
+  "compilerOptions": {
+    "useUnknownInCatchVariables": true
+  },
+  "tasks": {
+    "cache": "deno cache $(deno task find-all)",
+    "compile": "deno compile -A --output ssrv server.ts",
+    "check": "deno check $(deno task find-all)",
+    "find-all": "find . -type f \\( -iname '*.ts' -o -iname '*.tsx' -o -iname '*.js' -o -iname '*.jsx' \\)",
+    "format": "dprint fmt",
+    "fmt": "dprint fmt",
+    "lint": "deno lint $(deno task find-all) && dprint check"
+  },
+  "lint": {
+    "rules": {
+      "tags": ["recommended"],
+      "exclude": ["no-extra-semi"],
+      "include": ["no-non-null-assertion"]
+    }
+  },
+  "fmt": {
+    "files": {
+      "exclude": ["./"]
+    }
+  }
+}

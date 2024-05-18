@@ -1,7 +1,9 @@
-#! /usr/bin/env -S deno run -A --watch=.
+#! /usr/bin/env -S deno run -A
 
 import { type Config, configure } from './config/mod.ts'
 import { Application, type ListenOptions, type Middleware } from './deps/oak.ts'
+import { debounce } from './deps/std/debounce.ts'
+import { join } from './deps/std/path.ts'
 import { cacheMiddleware } from './middleware/cache-middleware.ts'
 import { compilerMiddleware } from './middleware/compiler-middleware.ts'
 import { crossOriginMiddleware } from './middleware/cross-origin-middleware.ts'
@@ -74,10 +76,77 @@ export async function serve(config?: Config, middlewareOpts?: MiddlewareOpts) {
 }
 
 if (import.meta.main) {
-  const config = await configure()
-  const server = await serve(config)
+  const args = Deno.args
 
-  await server.listener
+  console.debug(Deno.inspect(args))
 
-  Deno.exit(0)
+  let configureFn = configure
+  let importFileName = args.find(arg => !arg.startsWith('-'))
+
+  if (args.includes('--watch') || args.includes('-w')) {
+    console.warn('Watching. Will restart when any file changes...')
+
+    const watcher = Deno.watchFs('./')
+    let child: Deno.ChildProcess | undefined = undefined
+    let isBooting = false
+    let hasBootedOnce = false
+
+    Deno.addSignalListener('SIGTERM', () => {
+      if (child) {
+        child.kill('SIGTERM')
+      }
+    })
+
+    const boot = debounce(async () => {
+      if (isBooting) {
+        return
+      }
+
+      hasBootedOnce = true
+      isBooting = true
+
+      if (hasBootedOnce) {
+        console.warn('Rebooting...')
+      }
+
+      if (child) {
+        child.kill('SIGTERM')
+        await child.status
+      }
+
+      const command = new Deno.Command(Deno.execPath(), {
+        args: importFileName ? [importFileName] : []
+      })
+
+      console.debug({ command: [Deno.execPath(), importFileName] })
+
+      child = command.spawn()
+      isBooting = false
+    }, 100)
+
+    boot()
+
+    for await (const _event of watcher) {
+      boot()
+    }
+  } else {
+    if (importFileName) {
+      console.warn(`Loading ${importFileName}...`)
+
+      console.debug(join(Deno.cwd(), importFileName))
+
+      const mod = await import(join(Deno.cwd(), importFileName))
+
+      if (mod.configure) {
+        configureFn = mod.configure
+      }
+    }
+
+    const config = await configureFn()
+    const server = await serve(config)
+
+    await server.listener
+
+    Deno.exit(0)
+  }
 }

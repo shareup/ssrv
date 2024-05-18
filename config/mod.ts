@@ -6,7 +6,7 @@ declare global {
   }
 }
 
-import { type Context } from '../deps/oak.ts'
+import { type Context, type Middleware } from '../deps/oak.ts'
 import { encodeBase64 } from '../deps/std/encoding.ts'
 import { dirname, resolve, toFileUrl } from '../deps/std/path.ts'
 import { exists } from '../utils/exists.ts'
@@ -28,6 +28,8 @@ export async function configure(
     browserTarget?: string[]
     importMap?: { imports: Record<string, string> }
     importMapPath?: string
+    prepend?: Middleware[]
+    append?: Middleware[]
   }
 ): Promise<Config> {
   opts || (opts = {})
@@ -90,7 +92,9 @@ export async function configure(
     ssrRenderFile,
     browserTarget,
     importMap,
-    importMapPath
+    importMapPath,
+    prepend: opts.prepend,
+    append: opts.append
   }
 }
 

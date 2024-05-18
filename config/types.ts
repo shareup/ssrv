@@ -20,6 +20,8 @@ export type Config = {
   browserTarget: string[]
   importMap?: ImportMap
   importMapPath?: URL
+  prepend?: Middleware[]
+  append?: Middleware[]
 }
 
 export type Mode = 'dev' | 'prod'
